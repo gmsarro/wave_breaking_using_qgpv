@@ -132,10 +132,10 @@ python plot_case_study.py \
 
 4. **Classification** — Each filament is classified by the mean QGPV over all
    grid cells in the gap:
-   - mean QGPV > contour level → **CWB** (cyclonic; high-PV stratospheric
-     intrusion equatorward)
-   - mean QGPV < contour level → **AWB** (anticyclonic; low-PV tropospheric
-     intrusion poleward)
+   - mean QGPV > contour level → **CWB** (cyclonic; high-PV intrusion
+     equatorward)
+   - mean QGPV < contour level → **AWB** (anticyclonic; low-PV intrusion
+     poleward)
 
 5. **Cut-off detection** — All closed contours (other than the main jet) with
    ≥ 5° longitudinal expansion and < 90° span are identified as cut-offs.
