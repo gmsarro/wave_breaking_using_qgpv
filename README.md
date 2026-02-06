@@ -17,6 +17,18 @@ This tool builds on the following work:
   [GitHub: skaderli/WaveBreaking](https://github.com/skaderli/WaveBreaking) ·
   [DOI: 10.5281/zenodo.14214463](https://doi.org/10.5281/zenodo.14214463) ·
   [Master thesis](https://occrdata.unibe.ch/students/theses/msc/406.pdf)
+- **Huang, Polster, and Nakamura (2025)** — `falwa` Python package for
+  Finite-Amplitude Local Wave Activity diagnostics, including QGPV
+  computation on pseudo-height coordinates.
+  [GitHub: csyhuang/hn2016_falwa](https://github.com/csyhuang/hn2016_falwa) ·
+  [Geoscience Data Journal, 12(2), e70006](https://doi.org/10.1002/GDJ3.70006)
+
+QGPV on pseudo-height levels is used here because it is the same variable
+needed to compute Finite-Amplitude Local Wave Activity (FALWA). The QGPV
+computation follows the formulation in
+[Huang and Nakamura (2016, JAS)](https://doi.org/10.1175/JAS-D-15-0194.1)
+and is implemented in the
+[falwa](https://github.com/csyhuang/hn2016_falwa) package.
 
 ## How This Differs from WaveBreaking
 
