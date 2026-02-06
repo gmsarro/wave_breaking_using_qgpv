@@ -11,7 +11,7 @@ This tool builds on the following work:
 - **Barnes and Hartmann (2012)** — Overturning index for RWB detection.
   [DOI: 10.1029/2012JD017469](https://doi.org/10.1029/2012JD017469)
 - **Wernli and Sprenger (2007)** — Streamer and cut-off concepts.
-  [DOI: 10.1175/MWR3433.1](https://doi.org/10.1175/MWR3433.1)
+  [J. Atmos. Sci., 64, 1556–1570](https://journals.ametsoc.org/view/journals/atsc/64/5/jas3912.1.xml)
 - **Kaderli (2023)** — WaveBreaking Python package for RWB detection,
   classification, and tracking.
   [GitHub: skaderli/WaveBreaking](https://github.com/skaderli/WaveBreaking) ·
