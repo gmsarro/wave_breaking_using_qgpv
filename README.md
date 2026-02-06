@@ -4,6 +4,10 @@ Detect, classify, and map Rossby Wave Breaking (RWB) events in the Northern
 Hemisphere using quasi-geostrophic potential vorticity (QGPV) contour analysis
 on ERA5 reanalysis data.
 
+![Typhoon Nuri ET — RWB Detection Animation](nuri_rwb_animation.gif)
+
+*Animated RWB detection during Typhoon Nuri's extratropical transition (Nov 5–10, 2014). Red = anticyclonic wave breaking (AWB), blue = cyclonic wave breaking (CWB), black contour = QGPV at 1×10⁻⁴ s⁻¹, green star = Nuri.*
+
 ## References
 
 This tool builds on the following work:
@@ -98,7 +102,22 @@ python plot_climatology.py \
 
 The optional `--qgpv-directory` adds a mean QGPV contour overlay.
 
-### 3. Plot case study
+### 3. Animate case study
+
+Generate an animated GIF of RWB detection evolving over time:
+
+```bash
+python animate_case_study.py \
+    --qgpv-file /path/to/qgpv/2014_11_qgpv.nc \
+    --output-directory /path/to/figures/ \
+    --title-prefix "Typhoon Nuri ET - Rossby Wave Breaking" \
+    --year-month "2014-11" \
+    --start-index 8 --end-index 20 \
+    --marker-lon 155 --marker-lat 30 \
+    --fps 2
+```
+
+### 4. Plot case study
 
 Visualize RWB detection on individual timesteps from a QGPV file:
 
