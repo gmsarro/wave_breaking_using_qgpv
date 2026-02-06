@@ -113,7 +113,9 @@ python animate_case_study.py \
     --title-prefix "Typhoon Nuri ET - Rossby Wave Breaking" \
     --year-month "2014-11" \
     --start-index 8 --end-index 20 \
-    --marker-lon 155 --marker-lat 30 \
+    --ibtracs-file /path/to/IBTrACS.WP.v04r00.nc \
+    --storm-name NURI --storm-season 2014 \
+    --central-longitude 180 \
     --fps 2
 ```
 

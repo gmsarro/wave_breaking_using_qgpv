@@ -75,6 +75,47 @@ def _format_time_label(
     return "%s-%02d %02d:00" % (year_month, day, hour)
 
 
+def _load_ibtracs_track(
+    *,
+    ibtracs_file: pathlib.Path,
+    storm_name: str,
+    season: int,
+) -> typing.Optional[typing.Tuple[np.ndarray, np.ndarray, typing.List[str]]]:
+    with xr.open_dataset(str(ibtracs_file)) as ds:
+        names = ds["name"].values
+        seasons = ds["season"].values
+        for i in range(len(names)):
+            n = names[i].decode("ascii", errors="ignore").strip()
+            if storm_name.upper() in n.upper() and int(seasons[i]) == season:
+                lats = ds["lat"].values[i]
+                lons = ds["lon"].values[i]
+                times_raw = ds["iso_time"].values[i]
+                valid = ~np.isnan(lats)
+                track_lats = lats[valid]
+                track_lons = lons[valid]
+                track_times = [
+                    times_raw[j].decode("ascii", errors="ignore").strip()[:16]
+                    for j in np.where(valid)[0]
+                ]
+                return track_lats, track_lons, track_times
+    return None
+
+
+def _find_track_position(
+    *,
+    track_times: typing.List[str],
+    track_lats: np.ndarray,
+    track_lons: np.ndarray,
+    frame_time: str,
+) -> typing.Optional[typing.Tuple[float, float]]:
+    target = frame_time.replace(" ", "T")
+    for i, t in enumerate(track_times):
+        t_cmp = t.replace(" ", "T")
+        if t_cmp[:13] == target[:13]:
+            return float(track_lats[i]), float(track_lons[i])
+    return None
+
+
 def cli(
     qgpv_file: typing.Annotated[
         pathlib.Path,
@@ -104,14 +145,22 @@ def cli(
         typing.Optional[int],
         typer.Option(help="Last time index (exclusive; default: all)"),
     ] = None,
-    marker_lon: typing.Annotated[
-        typing.Optional[float],
-        typer.Option(help="Longitude for a marker (e.g. storm centre)"),
+    ibtracs_file: typing.Annotated[
+        typing.Optional[pathlib.Path],
+        typer.Option(help="IBTrACS NetCDF file for storm track overlay"),
     ] = None,
-    marker_lat: typing.Annotated[
-        typing.Optional[float],
-        typer.Option(help="Latitude for a marker"),
-    ] = None,
+    storm_name: typing.Annotated[
+        str,
+        typer.Option(help="Storm name to look up in IBTrACS"),
+    ] = "",
+    storm_season: typing.Annotated[
+        int,
+        typer.Option(help="Storm season (year) for IBTrACS lookup"),
+    ] = 0,
+    central_longitude: typing.Annotated[
+        float,
+        typer.Option(help="Central longitude for the polar stereographic projection"),
+    ] = 180.0,
     fps: typing.Annotated[
         int,
         typer.Option(help="Frames per second"),
@@ -131,6 +180,21 @@ def cli(
     if not year_month:
         stem = qgpv_file.stem.replace("_qgpv", "")
         year_month = stem.replace("_", "-")
+
+    track_lats: typing.Optional[np.ndarray] = None
+    track_lons: typing.Optional[np.ndarray] = None
+    track_times: typing.Optional[typing.List[str]] = None
+    if ibtracs_file is not None and storm_name and storm_season > 0:
+        result = _load_ibtracs_track(
+            ibtracs_file=ibtracs_file,
+            storm_name=storm_name,
+            season=storm_season,
+        )
+        if result is not None:
+            track_lats, track_lons, track_times = result
+            print("Loaded %s %d track: %d points" % (storm_name, storm_season, len(track_lats)))
+        else:
+            print("WARNING: %s %d not found in IBTrACS" % (storm_name, storm_season))
 
     with xr.open_dataset(str(qgpv_file)) as ds:
         lat_nh, lon, nh_mask, time_dim = _resolve_coordinates(ds=ds)
@@ -167,18 +231,19 @@ def cli(
     lon_grid, lat_grid = np.meshgrid(lon, lat_nh)
     qgpv_levels = np.linspace(-1e-4, 3e-4, 21)
 
+    proj = cartopy.crs.NorthPolarStereo(central_longitude=central_longitude)
     fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(1, 1, 1, projection=cartopy.crs.NorthPolarStereo())
+    ax = fig.add_subplot(1, 1, 1, projection=proj)
 
     legend_elements = [
         matplotlib.patches.Patch(facecolor="red", alpha=0.5, label="AWB (low-PV filament)"),
         matplotlib.patches.Patch(facecolor="blue", alpha=0.5, label="CWB (high-PV filament)"),
         plt.Line2D([0], [0], color="black", linewidth=2.5, label="QGPV contour"),
     ]
-    if marker_lon is not None and marker_lat is not None:
+    if track_lats is not None:
         legend_elements.append(
-            plt.Line2D([0], [0], marker="*", color="w", markerfacecolor="green",
-                       markersize=12, label="Marker"),
+            plt.Line2D([0], [0], color="lime", linewidth=2, marker="*",
+                       markersize=10, label="%s track" % storm_name),
         )
 
     def _draw_frame(frame_idx: int) -> None:
@@ -220,11 +285,22 @@ def cli(
         ax.add_feature(cartopy.feature.LAND, facecolor="lightgray", alpha=0.3)
         ax.gridlines(linestyle="--", alpha=0.3)
 
-        if marker_lon is not None and marker_lat is not None:
+        if track_lats is not None and track_lons is not None and track_times is not None:
             ax.plot(
-                marker_lon, marker_lat, "g*", markersize=14,
-                transform=cartopy.crs.PlateCarree(), zorder=10,
+                track_lons, track_lats, color="lime", linewidth=1.5,
+                transform=cartopy.crs.PlateCarree(), zorder=9,
             )
+            pos = _find_track_position(
+                track_times=track_times,
+                track_lats=track_lats,
+                track_lons=track_lons,
+                frame_time=time_str,
+            )
+            if pos is not None:
+                ax.plot(
+                    pos[1], pos[0], "g*", markersize=16,
+                    transform=cartopy.crs.PlateCarree(), zorder=10,
+                )
 
         ax.set_title(
             "%s\nQGPV = %.1e s$^{-1}$ | %s\n%d AWB, %d CWB" % (
