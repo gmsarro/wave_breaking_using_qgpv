@@ -7,6 +7,7 @@ import typing
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import cartopy.util as cutil
 import matplotlib
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -112,24 +113,33 @@ def cli(
     ax: plt.Axes = fig.add_subplot(1, 1, 1, projection=ccrs.NorthPolarStereo())
     ax.set_extent([-180, 180, 20, 90], crs=ccrs.PlateCarree())  # type: ignore[attr-defined]
 
-    lon_grid, lat_grid = np.meshgrid(lon, lat)
-    colors = [
-        "#0000FF", "#00BFFF", "#00FFFF",
+    total_cyclic, lon_cyclic = cutil.add_cyclic_point(total_smooth, coord=lon)
+    lon_grid, lat_grid = np.meshgrid(lon_cyclic, lat)
+
+    main_colors = [
+        "#0000FF", "#00BFFF", "#00FFFF", "#7FFF00",
         "#FFFF00", "#FF8C00", "#FF0000", "#8B0000",
     ]
-    cmap = mcolors.LinearSegmentedColormap.from_list("rwb_cmap", colors, N=100)
-    levels = np.arange(1, 13, 1)
+    main_cmap = mcolors.LinearSegmentedColormap.from_list("rwb_main", main_colors, N=256)
+    levels = [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
+    n_intervals = len(levels) - 1
+    color_list = ["#D0D0D0"]
+    for ci in range(n_intervals - 1):
+        color_list.append(main_cmap(ci / (n_intervals - 2)))
+    cmap = mcolors.ListedColormap(color_list)
+    norm = mcolors.BoundaryNorm(levels, cmap.N)
 
     cf = ax.contourf(
-        lon_grid, lat_grid, total_smooth,
-        levels=levels, cmap=cmap,
-        transform=ccrs.PlateCarree(), extend="both",
+        lon_grid, lat_grid, total_cyclic,
+        levels=levels, cmap=cmap, norm=norm,
+        transform=ccrs.PlateCarree(), extend="max",
     )
 
     if has_qgpv_mean and n_timesteps > 0:
         qgpv_mean = qgpv_sum / n_timesteps
+        qgpv_cyclic, _ = cutil.add_cyclic_point(qgpv_mean, coord=lon)
         ax.contour(
-            lon_grid, lat_grid, qgpv_mean,
+            lon_grid, lat_grid, qgpv_cyclic,
             levels=[detection.DEFAULT_QGPV_LEVEL],
             colors="black", linewidths=2,
             transform=ccrs.PlateCarree(),

@@ -6,6 +6,7 @@ import typing
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import cartopy.util as cutil
 import matplotlib
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -104,22 +105,28 @@ def cli(
     )
     axes_flat: np.ndarray = np.array(axes).flatten()
 
-    lon_grid, lat_grid = np.meshgrid(lon, lat_nh)
+    lon_cyclic = np.append(lon, lon[0] + 360.0)
+    lon_grid, lat_grid = np.meshgrid(lon_cyclic, lat_nh)
+
+    def _add_cyclic(field: np.ndarray) -> np.ndarray:
+        return np.concatenate([field, field[:, :1]], axis=1)
 
     for ax_idx in range(n_panels):
         time_str, qgpv_nh, mask_awb, mask_cwb, evts = sample_data[ax_idx]
         ax = axes_flat[ax_idx]
         ax.set_extent([-180, 180, 20, 90], crs=ccrs.PlateCarree())
 
+        qgpv_cyc = _add_cyclic(qgpv_nh)
         qgpv_levels = np.linspace(-1e-4, 3e-4, 21)
         ax.contourf(
-            lon_grid, lat_grid, qgpv_nh,
+            lon_grid, lat_grid, qgpv_cyc,
             levels=qgpv_levels, cmap="RdBu_r",
             transform=ccrs.PlateCarree(), extend="both",
         )
 
         if mask_awb.any():
-            awb_masked = np.ma.masked_where(mask_awb == 0, mask_awb)
+            awb_cyc = _add_cyclic(mask_awb)
+            awb_masked = np.ma.masked_where(awb_cyc == 0, awb_cyc)
             ax.pcolormesh(
                 lon_grid, lat_grid, awb_masked,
                 cmap="Reds", vmin=0, vmax=1.5, alpha=0.6,
@@ -127,7 +134,8 @@ def cli(
             )
 
         if mask_cwb.any():
-            cwb_masked = np.ma.masked_where(mask_cwb == 0, mask_cwb)
+            cwb_cyc = _add_cyclic(mask_cwb)
+            cwb_masked = np.ma.masked_where(cwb_cyc == 0, cwb_cyc)
             ax.pcolormesh(
                 lon_grid, lat_grid, cwb_masked,
                 cmap="Blues", vmin=0, vmax=1.5, alpha=0.6,
@@ -135,7 +143,7 @@ def cli(
             )
 
         ax.contour(
-            lon_grid, lat_grid, qgpv_nh,
+            lon_grid, lat_grid, qgpv_cyc,
             levels=[detection.DEFAULT_QGPV_LEVEL],
             colors="black", linewidths=2,
             transform=ccrs.PlateCarree(),

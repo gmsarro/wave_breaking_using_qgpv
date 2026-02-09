@@ -8,6 +8,10 @@ on ERA5 reanalysis data.
 
 *Animated RWB detection during Typhoon Nuri's extratropical transition (Nov 5–10, 2014). Red = anticyclonic wave breaking (AWB), blue = cyclonic wave breaking (CWB), black contour = QGPV at 1×10⁻⁴ s⁻¹, green star = Nuri.*
 
+![DJF RWB Climatology](rwb_climatology_final.png)
+
+*DJF (2000–2022) RWB occurrence frequency from ERA5 QGPV at 10 km. Gray shading indicates < 1% frequency. Black contour = mean QGPV at 1×10⁻⁴ s⁻¹.*
+
 ## References
 
 This tool builds on the following work:
