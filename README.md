@@ -6,7 +6,7 @@ on ERA5 reanalysis data.
 
 ![Typhoon Nuri ET — RWB Detection Animation](nuri_rwb_animation.gif)
 
-*Animated RWB detection during Typhoon Nuri's extratropical transition (Nov 5–9, 2014). Red = anticyclonic wave breaking (AWB), blue = cyclonic wave breaking (CWB), black contour = QGPV at 1×10⁻⁴ s⁻¹, green star = Nuri.*
+*Animated RWB detection during Typhoon Nuri's extratropical transition (Nov 5–8, 2014). Red = anticyclonic wave breaking (AWB), blue = cyclonic wave breaking (CWB), black contour = QGPV at 1×10⁻⁴ s⁻¹, green star = Nuri.*
 
 ![DJF RWB Climatology](rwb_climatology_final.png)
 
