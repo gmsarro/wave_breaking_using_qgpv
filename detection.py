@@ -123,6 +123,7 @@ def extract_contour(
 def compute_overturning_index(
     contour: typing.Optional[pd.DataFrame],
     *,
+    lat: np.ndarray,
     lon: np.ndarray,
     range_group: float = 5.0,
     min_exp: float = 5.0,
@@ -190,8 +191,19 @@ def compute_overturning_index(
         return df[~df.reset_index(drop=True).index.isin(drop_idx)]
 
     def _check_expansion(df: pd.DataFrame) -> pd.DataFrame:
-        exp_lon = df.max_lon - df.min_lon
-        return df[exp_lon >= min_exp / dlon]
+        keep = []
+        for idx, row in df.iterrows():
+            exp_lon_cells = row.max_lon - row.min_lon
+            mid_y = (
+                contour[
+                    contour["x"].isin(range(int(row.min_lon), int(row.max_lon) + 1))
+                ]["y"].mean()
+            )
+            mid_lat_deg = float(lat[min(int(round(mid_y)), len(lat) - 1)])
+            cos_lat = max(np.cos(np.radians(mid_lat_deg)), 0.05)
+            effective_exp = exp_lon_cells * dlon * cos_lat
+            keep.append(effective_exp >= min_exp)
+        return df[keep]
 
     def _find_lat_expansion(df: pd.DataFrame) -> pd.DataFrame:
         lats_list = [
@@ -409,11 +421,18 @@ def detect_cutoffs(
         pts_orig[:, 0] = pts_orig[:, 0] % nlon
         unique_lons = len(set(pts_orig[:, 0]))
 
-        if unique_lons < min_exp_cells:
-            continue
         if unique_lons > max_lon_span:
             continue
         if unique_lons * dlon >= max_exp * dlon:
+            continue
+
+        centroid_lat_idx = float(np.mean(pts_orig[:, 1]))
+        centroid_lat_deg = float(
+            lat[min(int(round(centroid_lat_idx)), nlat - 1)]
+        )
+        cos_lat = max(np.cos(np.radians(centroid_lat_deg)), 0.05)
+        effective_exp = unique_lons * dlon * cos_lat
+        if effective_exp < min_exp:
             continue
 
         sig = frozenset(map(tuple, pts_orig))
@@ -488,7 +507,7 @@ def process_single_timestep(
     event_types: typing.List[str] = []
 
     if contour is not None:
-        events = compute_overturning_index(contour, lon=lon)
+        events = compute_overturning_index(contour, lat=lat, lon=lon)
         if len(events) > 0:
             event_types = [
                 classify_wave_breaking(
